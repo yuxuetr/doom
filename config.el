@@ -87,13 +87,29 @@
         org-pomodoro-long-break-frequency 4))
 
 
-;; (use-package! copilot
-;;   :hook (prog-mode . copilot-mode)
-;;   :bind (:map copilot-completion-map
-;;               ("<tab>" . 'copilot-accept-completion)
-;;               ("TAB" . 'copilot-accept-completion)
-;;               ("C-TAB" . 'copilot-accept-completion-by-word)
-;;               ("C-<tab>" . 'copilot-accept-completion-by-word)))
+(use-package! copilot
+  :hook (prog-mode . copilot-mode)
+  :config
+  ;; 完全禁用 copilot 的缩进推断功能，避免警告
+  (setq copilot-indentation-alist nil)  ; 清空默认列表
+  (setq copilot-indent-offset 2)        ; 直接设置全局缩进
+  (advice-add 'copilot--infer-indentation-offset :override
+              (lambda (&optional _) 2))  ; 覆盖推断函数，始终返回 2
+
+  ;; 禁用警告消息
+  (setq copilot-show-warning nil)
+
+  ;; 抑制 copilot 相关的警告消息
+  (dolist (warning '("copilot--infer-indentation-offset found no mode-specific indentation offset"
+                    "copilot.*indentation"
+                    "Copilot.*indentation"))
+    (add-to-list 'warning-suppress-types (cons warning t)))
+
+  :bind (:map copilot-completion-map
+              ("<tab>" . 'copilot-accept-completion)
+              ("TAB" . 'copilot-accept-completion)
+              ("C-TAB" . 'copilot-accept-completion-by-word)
+              ("C-<tab>" . 'copilot-accept-completion-by-word)))
 
 ;; (use-package! tree-sitter
 ;;   :config
@@ -115,21 +131,79 @@
           (height . 80))))
 (setq-default electric-indent-mode t)
 (setq-default auto-fill-function 'do-auto-fill)
+
 (setq evil-auto-indent 2)
 (setq-default evil-shift-width 2)
 (add-hook 'text-mode-hook (lambda () (setq tab-width 2)))
-;; (add-hook 'prog-mode-hook (lambda () (setq tab-width 2)))
-
+(add-hook 'prog-mode-hook (lambda () (setq tab-width 2)))
 (setq-default tab-width 2        ; 设置 Tab 大小为 2
               indent-tabs-mode nil ; 使用空格代替 Tab（如果希望使用 Tab，请将其设置为 t）
               standard-indent 2)   ; 设置标准缩进为 2
 
+;; Evil mode 缩进配置 - 确保 o 命令使用 2 空格缩进
+(after! evil
+  (setq-default evil-indent-level 2)           ; evil 模式下的缩进级别
+  (setq-default evil-esc-delay 0.01)           ; 减少 ESC 键延迟
+  (setq-default evil-auto-indent t)           ; 启用自动缩进
+  (setq-default evil-shift-width 2)            ; evil 模式下的缩进宽度
+  (setq-default evil-backspace-join-lines nil)) ; 防止退格时合并行
+
+(setq-hook! 'prog-mode-hook
+  evil-shift-width 2
+  evil-indent-level 2
+  evil-auto-indent t)
+(setq tab-width 2)
+(setq-hook! 'python-mode-hook tab-width 2)
+(setq-hook! 'rust-mode-hook tab-width 2)
 ;; 使所有编程模式遵循此配置
 (add-hook 'prog-mode-hook
           (lambda ()
             (setq tab-width 2
                   standard-indent 2
-                  indent-tabs-mode nil)))  ; 如果希望使用 tab 缩进，请将其设置为 t
+                  indent-tabs-mode nil
+                  evil-indent-level 2
+                  evil-shift-width 2)))  ; 如果希望使用 tab 缩进，请将其设置为 t
+
+;; 为特定模式设置evil缩进
+(add-hook! 'python-mode-hook
+  (setq-local evil-indent-level 2
+              evil-shift-width 2
+              tab-width 2))
+
+(add-hook! 'rust-mode-hook
+  (setq-local evil-indent-level 2
+              evil-shift-width 2
+              tab-width 2))
+
+(add-hook! 'javascript-mode-hook
+  (setq-local evil-indent-level 2
+              evil-shift-width 2
+              tab-width 2))
+
+(add-hook! 'typescript-mode-hook
+  (setq-local evil-indent-level 2
+              evil-shift-width 2
+              tab-width 2))
+
+(add-hook! 'web-mode-hook
+  (setq-local evil-indent-level 2
+              evil-shift-width 2
+              tab-width 2))
+
+;; 确保evil的open-below命令使用正确的缩进
+(after! evil
+  (defun my/evil-open-below-with-indent ()
+    "Open a new line below with proper indentation."
+    (interactive)
+    (let ((indent (current-indentation)))
+      (end-of-line)
+      (newline)
+      (indent-to indent)
+      (evil-insert-state)))
+
+  ;; 重新绑定 o 命令，但只在特定模式下
+  (evil-define-key 'normal 'prog-mode-map "o" #'my/evil-open-below-with-indent)
+  (evil-define-key 'normal 'text-mode-map "o" #'my/evil-open-below-with-indent))
 
 
 (setq org-superstar-headline-bullets-list '("☰" "☷" "☳" "☴" "☵" "☲" "☶" "☱"))
@@ -137,13 +211,12 @@
 (setq evil-snipe-override-evil-repeat-keys nil)
 (setq doom-localleader-key ",")
 (setq doom-localleader-alt-key "M-,")
-
-(find-file
- (concat "~/org/days/" (format-time-string "%Y-%m-%d") ".org"))
+;;(find-file
+;; (concat "~/org/days/" (format-time-string "%Y-%m-%d") ".org"))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;ProtoBuf;;;;;;;;;;;;;;;;;;;;;;;;
-(add-to-list 'load-path "~/.config/doom/lisp/")
+;; (add-to-list 'load-path "~/.config/doom/lisp/")
 
 ;; Load protobuf-mode
 (require 'protobuf-mode)
@@ -153,36 +226,6 @@
           (lambda ()
             (setq c-basic-offset 2
                   indent-tabs-mode nil)))
-
-;;; Minuet AI Configuration
-
-(use-package! minuet
-  :commands (minuet-complete-with-minibuffer minuet-show-suggestion)
-  :bind
-  (("M-y" . minuet-complete-with-minibuffer) ;; 使用 minibuffer 进行补全
-   ("M-i" . minuet-show-suggestion)) ;; 使用 overlay 进行补全
-  :hook (prog-mode . minuet-auto-suggestion-mode) ;; 在编程模式启用自动补全
-  :config
-  ;; 选择 DeepSeek 作为补全提供商
-  (setq minuet-provider 'openai-fim-compatible)
-
-  ;; 设置 API 端点和 DeepSeek 相关配置
-  (plist-put minuet-openai-fim-compatible-options :end-point "https://api.deepseek.com/beta/completions")
-  (plist-put minuet-openai-fim-compatible-options :api-key "DEEPSEEK_API_KEY") ;; 需要在环境变量中设置
-  (plist-put minuet-openai-fim-compatible-options :name "DeepSeek")
-  (plist-put minuet-openai-fim-compatible-options :model "deepseek-coder-v2") ;; DeepSeek 编码模型
-  (plist-put minuet-openai-fim-compatible-options :max_tokens 256) ;; 限制最大生成 token
-
-  ;; 设定补全相关选项
-  (setq minuet-n-completions 3) ;; 设为 3 以获取多种补全建议
-  (setq minuet-context-window 16000) ;; 适用于 DeepSeek 的大上下文窗口
-  (setq minuet-context-ratio 0.75) ;; 75% 上下文在光标之前
-  (setq minuet-request-timeout 3) ;; 超时限制
-
-  (map! :map prog-mode-map
-        "TAB" #'minuet-show-suggestion))
-
-(add-hook 'minuet-active-mode-hook #'evil-normalize-keymaps)
 
 (setq gc-cons-threshold 100000000); 100M,设置GC不那么频繁
 

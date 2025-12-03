@@ -63,7 +63,7 @@
        ;; electric          ; smarter, keyword-based electric-indent
        ;;ibuffer         ; interactive buffer management
        undo              ; persistent, smarter undo for your inevitable mistakes
-       vc                ; version-control and Emacs, sitting in a tree
+       ;;vc                ; version-control and Emacs, sitting in a tree
 
        :term
        ;; eshell            ; the elisp shell that works everywhere
@@ -81,7 +81,7 @@
        :tools
        ;;ansible
        ;;biblio            ; Writes a PhD for you (citation needed)
-       debugger          ; FIXME stepping through code, to help you add bugs
+       ;;debugger          ; FIXME stepping through code, to help you add bugs
        ;;direnv
        ;; docker
        editorconfig      ; let someone else argue about tabs vs spaces
@@ -111,19 +111,13 @@
         )
        ;;clojure           ; java with a lisp
        ;;common-lisp       ; if you've seen one lisp, you've seen them all
-       ;;csharp            ; unity, .NET, and mono shenanigans
        ;;data              ; config/data formats
-       ;; (dart
-       ;;  +flutter
-       ;;  +tree-sitter
-       ;;  +lsp
-       ;;  )
        emacs-lisp        ; drown in parentheses
        ;; (go
        ;;  +tree-sitter
        ;;  +lsp
        ;;  )
-       (graphql +lsp)    ; Give queries a REST
+       ;;(graphql +lsp)    ; Give queries a REST
        ;;(haskell +lsp)    ; a language that's lazier than I am
        ;;hy                ; readability of scheme w/ speed of python
        ;;idris             ; a language you can depend on
@@ -131,10 +125,10 @@
        ;;  +tree-sitter
        ;;  +lsp
        ;;  )
-       (javascript
-        +tree-sitter
-        +lsp
-        )
+       ;;(javascript
+       ;; +tree-sitter
+       ;; +lsp
+       ;;)
        (julia
         +tree-sitter
         +lsp
@@ -143,10 +137,10 @@
        ;;  +tree-sitter
        ;;  +lsp
        ;;  )
-       ;; (latex
-       ;;  +fold
-       ;;  +lsp
-       ;;  )
+       (latex
+        +fold
+        +lsp
+        )
        ;;lean              ; for folks with too much to prove
        ;;ledger            ; be audit you can be
        ;; (lua
@@ -162,32 +156,23 @@
         +present
         +pomodoro
         )
-       ;;php               ; perl's insecure younger brother
        ;;purescript        ; javascript, but functional
        (python
         +tree-sitter
         +lsp
-        +pyright
         )
-       rest              ; Emacs as a REST client
+       ;;rest              ; Emacs as a REST client
        (rust
         +tree-sitter
         +lsp
         )
-       ;;scala             ; java, but good
        ;;(scheme +guile)   ; a fully conniving family of lisps
        ;; (sh
        ;;  +tree-sitter
        ;;  +lsp
        ;;  )
-       ;;sml
-       ;; solidity          ; do you need a blockchain? No.
        ;; swift             ; who asked for emoji variables?
        ;; (web
-       ;;  +lsp
-       ;;  +tree-sitter
-       ;;  )
-       ;; (yaml
        ;;  +lsp
        ;;  +tree-sitter
        ;;  )
