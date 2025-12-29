@@ -125,10 +125,10 @@
        ;;  +tree-sitter
        ;;  +lsp
        ;;  )
-       ;;(javascript
-       ;; +tree-sitter
-       ;; +lsp
-       ;;)
+       (javascript
+        +tree-sitter
+        +lsp
+        )
        (julia
         +tree-sitter
         +lsp
@@ -172,10 +172,14 @@
        ;;  +lsp
        ;;  )
        ;; swift             ; who asked for emoji variables?
-       ;; (web
-       ;;  +lsp
-       ;;  +tree-sitter
-       ;;  )
+       (typescript
+        +lsp
+        +tree-sitter
+        )
+       (web
+        +lsp
+        +tree-sitter
+        )
        ;; (zig
        ;;  +lsp
        ;;  +tree-sitter
