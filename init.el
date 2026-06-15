@@ -82,6 +82,12 @@
        tty               ; improve the terminal Emacs experience
 
        :lang
+       (cc
+        +lsp
+        )
+       (go
+        +lsp
+        )
        (julia
         +tree-sitter
         +lsp
