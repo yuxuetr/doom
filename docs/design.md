@@ -31,6 +31,8 @@ future upstream module additions is not a design goal.
   - `unicode`
   - `vi-tilde-fringe`
   - `workspaces`
+- Keep checker modules:
+  - `syntax`
 - Keep no input modules.
 - Keep no app modules.
 - Keep language support for:
@@ -86,6 +88,9 @@ future upstream module additions is not a design goal.
   - `everywhere`
   - `irc`
   - `rss`
+- Remove unused checker modules:
+  - `grammar`
+  - `spell`
 - Remove Doom Python integration for package/environment managers other than
   `uv`.
 - Remove Python test framework helpers that are not part of the requested

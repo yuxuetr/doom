@@ -63,11 +63,7 @@
        ;; vterm             ; the best terminal emulation in Emacs
 
        :checkers
-       ;; (syntax
-       ;;  +childframe
-       ;;  )              ; tasing you for every semicolon you forget
-       ;; (spell +flyspell)
-       ;;grammar           ; tasing grammar mistake every you make
+       ;; (syntax +flymake)
 
        :tools
        editorconfig      ; let someone else argue about tabs vs spaces
