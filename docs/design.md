@@ -33,6 +33,12 @@ future upstream module additions is not a design goal.
   - `workspaces`
 - Keep checker modules:
   - `syntax`
+- Keep editor modules:
+  - `evil`
+  - `fold`
+  - `format`
+  - `multiple-cursors`
+  - `snippets`
 - Keep no input modules.
 - Keep no app modules.
 - Keep language support for:
@@ -91,6 +97,15 @@ future upstream module additions is not a design goal.
 - Remove unused checker modules:
   - `grammar`
   - `spell`
+- Remove unused editor modules:
+  - `file-templates`
+  - `god`
+  - `lispy`
+  - `objed`
+  - `parinfer`
+  - `rotate-text`
+  - `whitespace`
+  - `word-wrap`
 - Remove Doom Python integration for package/environment managers other than
   `uv`.
 - Remove Python test framework helpers that are not part of the requested
