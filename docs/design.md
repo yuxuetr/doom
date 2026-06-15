@@ -29,6 +29,16 @@ future upstream module additions is not a design goal.
 
 - Remove language module source directories that are not explicitly listed
   above.
+- Remove Doom's email module family entirely.
+- Remove unneeded tool modules:
+  - `ansible`
+  - `biblio`
+  - `collab`
+  - `ein`
+  - `pass`
+  - `pdf`
+  - `terraform`
+  - `upload`
 - Remove Doom Python integration for package/environment managers other than
   `uv`.
 - Remove Python test framework helpers that are not part of the requested

@@ -75,7 +75,6 @@
        (lsp +eglot)               ; M-x vscode
        magit             ; a git porcelain for Emacs
        tree-sitter       ; syntax and parsing, sitting in a tree...
-       upload            ; map local to remote projects via ssh/ftp
 
        :os
        (:if IS-MAC macos)  ; improve compatibility with macOS
