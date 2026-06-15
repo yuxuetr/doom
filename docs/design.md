@@ -39,6 +39,13 @@ future upstream module additions is not a design goal.
   - `format`
   - `multiple-cursors`
   - `snippets`
+- Keep tool modules:
+  - `editorconfig`
+  - `eval`
+  - `lookup`
+  - `lsp`
+  - `magit`
+  - `tree-sitter`
 - Keep no input modules.
 - Keep no app modules.
 - Keep language support for:
@@ -106,6 +113,13 @@ future upstream module additions is not a design goal.
   - `rotate-text`
   - `whitespace`
   - `word-wrap`
+- Remove unused tool modules:
+  - `debugger`
+  - `direnv`
+  - `docker`
+  - `llm`
+  - `make`
+  - `tmux`
 - Remove Doom Python integration for package/environment managers other than
   `uv`.
 - Remove Python test framework helpers that are not part of the requested
