@@ -16,6 +16,10 @@ future upstream module additions is not a design goal.
 - Keep Evil as the primary editing model.
 - Keep the default Doom binding/smartparens layer.
 - Keep Org mode.
+- Keep completion modules:
+  - `company`
+  - `corfu`
+  - `vertico`
 - Keep language support for:
   - C/C++ (`cc`)
   - Go (`go`)
@@ -39,6 +43,10 @@ future upstream module additions is not a design goal.
   - `pdf`
   - `terraform`
   - `upload`
+- Remove unused completion modules:
+  - `helm`
+  - `ido`
+  - `ivy`
 - Remove Doom Python integration for package/environment managers other than
   `uv`.
 - Remove Python test framework helpers that are not part of the requested
