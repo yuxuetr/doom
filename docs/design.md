@@ -20,6 +20,17 @@ future upstream module additions is not a design goal.
   - `company`
   - `corfu`
   - `vertico`
+- Keep UI modules:
+  - `doom`
+  - `hl-todo`
+  - `indent-guides`
+  - `ligatures`
+  - `modeline`
+  - `ophints`
+  - `popup`
+  - `unicode`
+  - `vi-tilde-fringe`
+  - `workspaces`
 - Keep language support for:
   - C/C++ (`cc`)
   - Go (`go`)
@@ -47,6 +58,21 @@ future upstream module additions is not a design goal.
   - `helm`
   - `ido`
   - `ivy`
+- Remove unused UI modules:
+  - `dashboard`
+  - `doom-dashboard`
+  - `deft`
+  - `doom-quit`
+  - `emoji`
+  - `minimap`
+  - `nav-flash`
+  - `neotree`
+  - `smooth-scroll`
+  - `tabs`
+  - `treemacs`
+  - `vc-gutter`
+  - `window-select`
+  - `zen`
 - Remove Doom Python integration for package/environment managers other than
   `uv`.
 - Remove Python test framework helpers that are not part of the requested
