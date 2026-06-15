@@ -49,15 +49,16 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
                                         ;(unpin! t)
 
-(package! copilot
-  :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el" "dist")))
-
 (package! treesit-auto
   :recipe (:host github :repo "renzmann/treesit-auto" :files ("*.el" "dist")))
 
+(package! pip-requirements :disable t)
+(package! pipenv :disable t)
+(package! pyvenv :disable t)
+(package! pyenv-mode :disable t)
+(package! conda :disable t)
+(package! poetry :disable t)
+(package! nose :disable t)
+(package! python-pytest :disable t)
+
 (package! org-pomodoro)
-
-(package! protobuf-mode
-  :recipe (:local-repo "~/.config/doom/lisp/"
-           :files ("protobuf-mode.el")))
-

@@ -96,9 +96,9 @@
         +pandoc
         +present
         +pomodoro
-        )
+       )
        (python
-        +tree-sitter
+        +uv
         +lsp
         )
        (racket

@@ -186,6 +186,21 @@
 
 ;;;; Languages & Tools
 
+(defun my/python-use-classic-mode! ()
+  "Prefer classic `python-mode' over `python-ts-mode'."
+  (dolist (alist-var '(major-mode-remap-alist
+                       major-mode-remap-defaults
+                       treesit-major-mode-remap-alist))
+    (when (boundp alist-var)
+      (set alist-var (assq-delete-all 'python-mode (symbol-value alist-var)))))
+  (setq auto-mode-alist
+        (cl-remove-if
+         (lambda (entry)
+           (and (consp entry)
+                (eq (cdr entry) 'python-ts-mode)))
+         auto-mode-alist))
+  (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode)))
+
 (after! treesit
   ;; Doom installs grammars under its profile data dir, but making the path
   ;; explicit keeps Emacs 30 able to find already-built grammars like Rust.
@@ -198,10 +213,12 @@
   :custom
   (treesit-auto-install 'prompt)
   :config
+  (setq treesit-auto-langs (delete 'python treesit-auto-langs))
   (dolist (grammar '((rust "https://github.com/tree-sitter/tree-sitter-rust")
                      (julia "https://github.com/tree-sitter/tree-sitter-julia")))
     (cl-pushnew grammar treesit-language-source-alist :test #'eq :key #'car))
   (treesit-auto-add-to-auto-mode-alist)
+  (my/python-use-classic-mode!)
   (global-treesit-auto-mode))
 
 (defun my/rust-cargo-deny ()
@@ -433,21 +450,208 @@
              (eglot-ensure)))))
      (current-buffer))))
 
+;;;; Python
+(defun my/python-parent-directories (&optional directory)
+  "Return DIRECTORY, its parent, and grandparent."
+  (let ((dir (file-truename (or directory default-directory)))
+        dirs)
+    (dotimes (_ 3)
+      (push dir dirs)
+      (setq dir (file-name-directory (directory-file-name dir))))
+    (nreverse (delete-dups dirs))))
+
+(defun my/python-uv-project-root (&optional directory)
+  "Return the nearest uv project root up to two parents above DIRECTORY."
+  (cl-find-if
+   (lambda (dir)
+     (or (file-exists-p (expand-file-name "uv.lock" dir))
+         (file-exists-p (expand-file-name "pyproject.toml" dir))))
+   (my/python-parent-directories directory)))
+
+(defun my/python-uv-venv-root (&optional directory)
+  "Return the .venv directory for a nearby uv project, if it exists."
+  (when-let ((root (my/python-uv-project-root directory)))
+    (let ((venv (expand-file-name ".venv" root)))
+      (when (file-directory-p venv)
+        venv))))
+
+(defun my/python-activate-uv-venv-h ()
+  "Activate a nearby uv project's .venv for this Python buffer."
+  (let* ((directory (or (and buffer-file-name
+                             (file-name-directory buffer-file-name))
+                        default-directory))
+         (uv-root (my/python-uv-project-root directory))
+         (venv (and uv-root (my/python-uv-venv-root directory))))
+    (setq-local my/python-uv-project-root uv-root
+                my/python-uv-venv-root venv)
+    (when venv
+      (let* ((venv-bin (expand-file-name "bin" venv))
+             (venv-python (expand-file-name "python" venv-bin))
+             (venv-parent (file-name-directory (directory-file-name venv)))
+             (venv-name (file-name-nondirectory (directory-file-name venv))))
+        (setq-local python-shell-virtualenv-root venv
+                    python-shell-interpreter venv-python
+                    exec-path (cons venv-bin (remove venv-bin exec-path))
+                    process-environment
+                    (cons (concat "VIRTUAL_ENV=" venv)
+                          (cons (concat "PATH=" venv-bin path-separator (getenv "PATH"))
+                                (seq-remove
+                                 (lambda (entry)
+                                   (or (string-prefix-p "VIRTUAL_ENV=" entry)
+                                       (string-prefix-p "PATH=" entry)))
+                                 process-environment)))
+                    doom-modeline-python-executable venv-python
+                    doom-modeline-env-python-executable venv-python
+                    doom-modeline-env--command venv-python
+                    doom-modeline-env--command-args '("--version")
+                    doom-modeline-env--version nil
+                    eglot-workspace-configuration
+                    (list :python
+                          (list :pythonPath venv-python
+                                :venvPath venv-parent
+                                :venv venv-name)))
+        (when (fboundp 'doom-modeline-env--python-parse)
+          (setq-local doom-modeline-env--parser #'doom-modeline-env--python-parse))
+        (when (fboundp 'doom-modeline-update-env)
+          (doom-modeline-update-env))
+        (force-mode-line-update)))))
+
+(defun my/python-uv-run-file ()
+  "Run the current Python file with uv in its nearby project root."
+  (interactive)
+  (unless buffer-file-name
+    (user-error "Current buffer is not visiting a file"))
+  (save-buffer)
+  (let* ((file (file-truename buffer-file-name))
+         (root (or (my/python-uv-project-root (file-name-directory file))
+                   (locate-dominating-file file ".git")
+                   (file-name-directory file)))
+         (default-directory (file-truename root))
+         (relative-file (file-relative-name file default-directory))
+         (command (format "uv run python %s" (shell-quote-argument relative-file))))
+    (compilation-start command 'compilation-mode
+                       (lambda (_) "*Python Run*"))))
+
+(defun my/python-format-buffer ()
+  "Format the current Python buffer using local indentation settings."
+  (interactive)
+  (unless (derived-mode-p 'python-mode 'python-ts-mode)
+    (user-error "Current buffer is not a Python buffer"))
+  (let ((python-indent-offset 2)
+        (tab-width 2)
+        (indent-tabs-mode nil))
+    (save-excursion
+      (untabify (point-min) (point-max))
+      (indent-region (point-min) (point-max)))))
+
+(defun my/python-format-before-save-h ()
+  "Format Python buffers before saving."
+  (when (derived-mode-p 'python-mode 'python-ts-mode)
+    (my/python-format-buffer)))
+
+(defun my/python-output-window-p (window)
+  "Return non-nil if WINDOW shows Python run/test output."
+  (with-current-buffer (window-buffer window)
+    (and (derived-mode-p 'compilation-mode)
+         (or (string-prefix-p "*Python Run" (buffer-name))
+             (string-match-p "pytest" (buffer-name))
+             (save-excursion
+               (goto-char (point-min))
+               (looking-at-p "cwd: .*\\(?:\n\\|.\\)*cmd: \\(?:uv run python\\|pytest\\)"))))))
+
+(defun my/python-output-window ()
+  "Return a visible Python run/test output window, if any."
+  (cl-find-if #'my/python-output-window-p (window-list nil 'no-minibuf)))
+
+(defun my/python-quit-output-window ()
+  "Hide the visible Python run/test output window without killing its buffer."
+  (interactive)
+  (when-let ((window (my/python-output-window)))
+    (quit-window nil window)
+    t))
+
+(defun my/python-escape-or-quit-output-window ()
+  "Hide Python output window, or fall back to Doom's ESC behavior."
+  (interactive)
+  (unless (my/python-quit-output-window)
+    (if (and (bound-and-true-p evil-mode)
+             (memq evil-state '(insert replace visual operator)))
+        (evil-force-normal-state)
+      (doom/escape 'interactive))))
+
+(add-hook! '(python-mode-hook python-ts-mode-hook)
+  (defun my/python-buffer-defaults-h ()
+    "Apply Python buffer defaults."
+    (setq-local indent-tabs-mode nil
+                tab-width 2
+                python-indent-offset 2
+                python-indent-guess-indent-offset nil
+                python-indent-guess-indent-offset-verbose nil
+                apheleia-inhibit t
+                treesit-font-lock-level 3)))
+
+(add-hook! '(python-mode-local-vars-hook python-ts-mode-local-vars-hook)
+           #'my/python-activate-uv-venv-h)
+
+(add-hook! '(python-mode-hook python-ts-mode-hook)
+  (defun my/python-enable-format-on-save-h ()
+    "Use indentation-based format-on-save for Python."
+    (add-hook 'before-save-hook #'my/python-format-before-save-h nil t)))
+
+(add-hook! 'doom-escape-hook
+  (defun my/python-quit-output-window-h ()
+    "Let ESC hide visible Python run/test output first."
+    (when (my/python-output-window)
+      (my/python-quit-output-window))))
+
+(after! python
+  ;; Emacs 30.2's `python-ts-mode' font-lock queries can be incompatible with
+  ;; the locally installed grammar, which breaks redisplay. Prefer classic
+  ;; `python-mode' until the grammar/runtime pair is upgraded together.
+  (my/python-use-classic-mode!)
+  ;; Python is intentionally kept uv-only; no automatic LSP startup.
+  (remove-hook 'python-mode-local-vars-hook #'lsp!)
+  (remove-hook 'python-ts-mode-local-vars-hook #'lsp!)
+  (map! :map python-base-mode-map
+        :localleader
+        "e" nil
+        :desc "format buffer" "f" #'my/python-format-buffer
+        (:prefix ("r" . "run")
+         :desc "uv run file" "r" #'my/python-uv-run-file))
+  (after! evil
+    (evil-define-key* '(normal insert emacs motion)
+      python-base-mode-map [escape] #'my/python-escape-or-quit-output-window)))
+
+(after! compile
+  (after! evil
+    (evil-define-key* '(normal insert emacs motion)
+      compilation-mode-map [escape] #'my/python-quit-output-window)
+    (evil-define-key* 'normal compilation-mode-map "q" #'quit-window)))
+
 ;; Eglot + Inlay Hints
 (setq gc-cons-threshold 100000000) ;; 100MB GC threshold
 
 (use-package! eglot
-  :hook ((python-mode . eglot-ensure)
-         (python-ts-mode . eglot-ensure))
   :config
   ;; Keep diagnostics out of Flymake to avoid per-buffer diagnostic overlays.
   (add-to-list 'eglot-stay-out-of 'flymake)
+  ;; Avoid runaway reconnect/event-buffer loops when a language server exits.
+  (setq eglot-autoreconnect nil
+        eglot-max-file-watches 1000
+        eglot-watch-files-outside-project-root nil)
 
   (add-hook 'eglot-managed-mode-hook
             (defun my/enable-rust-inlay-hints-h ()
               "Enable rust-analyzer inlay hints in Rust buffers."
               (when (derived-mode-p 'rust-mode 'rust-ts-mode 'rustic-mode)
                 (eglot-inlay-hints-mode 1))))
+
+  ;; Keep Python uv-only; do not let Eglot auto-resolve a Python language server.
+  (setq eglot-server-programs
+        (cl-remove-if
+         (lambda (entry)
+           (equal (car entry) '(python-mode python-ts-mode)))
+         eglot-server-programs))
 
   ;; Language Server Configurations
   (setq eglot-workspace-configuration
@@ -459,34 +663,17 @@
             :parameterHints (:enable t)
             :chainingHints (:enable t)
             :closureReturnTypeHints (:enable "always")
-            :maxLength nil))
-          :pyright
-          (:inlayHints
-           (:parameterNames t
-            :variableTypes t
-            :functionReturnTypes t
-            :functionParameterTypes t
-            :propertyDeclarationTypes t))))
+            :maxLength nil)))))
 
-  ;; Python Setup
-  (add-to-list 'eglot-server-programs
-               '((python-mode python-ts-mode) .
-                 ("pyright-langserver" "--stdio" :initializationOptions
-                  (:python
-                   (:analysis
-                    (:inlayHints
-                     (:parameterNames t
-                      :variableTypes t
-                      :functionReturnTypes t
-                      :functionParameterTypes t
-                      :propertyDeclarationTypes t))))))))
 ;;
 ;;; Global Formatting Configuration
 (after! apheleia
   ;; Force rustfmt to use the global config
   (set-formatter! 'rustfmt '("rustfmt" "--config-path" "~/.rustfmt.toml" "--emit" "stdout") :modes '(rust-mode rustic-mode rust-ts-mode))
-  ;; Force black to use the global config
-  (set-formatter! 'black '("black" "--config" "~/.config/black" "-q" "-") :modes '(python-mode python-ts-mode)))
+  ;; Python uses `my/python-format-buffer' so 2-space indentation is preserved.
+  (setq apheleia-mode-alist
+        (assq-delete-all 'python-ts-mode
+                         (assq-delete-all 'python-mode apheleia-mode-alist))))
 
 ;; Force 2-space indentation globally in Emacs
 (setq-default tab-width 2
