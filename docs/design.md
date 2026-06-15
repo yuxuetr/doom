@@ -31,6 +31,8 @@ future upstream module additions is not a design goal.
   - `unicode`
   - `vi-tilde-fringe`
   - `workspaces`
+- Keep no input modules.
+- Keep no app modules.
 - Keep language support for:
   - C/C++ (`cc`)
   - Go (`go`)
@@ -73,6 +75,17 @@ future upstream module additions is not a design goal.
   - `vc-gutter`
   - `window-select`
   - `zen`
+- Remove unused input modules:
+  - `bidi`
+  - `chinese`
+  - `japanese`
+  - `layout`
+- Remove unused app modules:
+  - `calendar`
+  - `emms`
+  - `everywhere`
+  - `irc`
+  - `rss`
 - Remove Doom Python integration for package/environment managers other than
   `uv`.
 - Remove Python test framework helpers that are not part of the requested
