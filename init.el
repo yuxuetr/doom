@@ -42,7 +42,7 @@
        fold              ; (nigh) universal code folding
        (format +onsave)  ; automated prettiness
        multiple-cursors  ; editing in many places at once
-       snippets          ; my elves. They type so I don't have to
+       ;;snippets          ; snippet expansion
 
        :emacs
        dired             ; making dired pretty [functional]
@@ -90,7 +90,6 @@
         +pretty
         +gnuplot
         +pandoc
-        +present
         +pomodoro
        )
        (python

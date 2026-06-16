@@ -38,7 +38,6 @@ future upstream module additions is not a design goal.
   - `fold`
   - `format`
   - `multiple-cursors`
-  - `snippets`
 - Keep tool modules:
   - `editorconfig`
   - `eval`
@@ -111,6 +110,7 @@ future upstream module additions is not a design goal.
   - `objed`
   - `parinfer`
   - `rotate-text`
+  - `snippets`
   - `whitespace`
   - `word-wrap`
 - Remove unused tool modules:
