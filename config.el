@@ -564,7 +564,9 @@
             :parameterHints (:enable t)
             :chainingHints (:enable t)
             :closureReturnTypeHints (:enable "always")
-            :maxLength nil)))))
+            ;; Keep all hint types but truncate very long ones, so inlay
+            ;; rendering stays cheap in large files.
+            :maxLength 25)))))
 
 ;;
 ;;; Global Formatting Configuration
