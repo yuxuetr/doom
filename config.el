@@ -184,7 +184,17 @@
            (function my/org-capture-this-week)
            "* TODO %?\n  %U\n  :PROPERTIES:\n  :Effort:   0:45\n  :END:\n")))
 
-  (org-clock-persistence-insinuate))
+  (org-clock-persistence-insinuate)
+
+  ;; `org-agenda-files' above is computed once at load. After midnight on the
+  ;; ISO week boundary it would still point at last week's file, hiding the new
+  ;; week's tasks. Recompute it just before any agenda command runs.
+  (defun my/org-refresh-weekly-agenda-files (&rest _)
+    "Point `org-agenda-files' at the current ISO week's task file."
+    (setq org-agenda-files (list (my/org-weekly-task-file))))
+  (advice-add 'org-agenda :before #'my/org-refresh-weekly-agenda-files)
+  (advice-add 'org-todo-list :before #'my/org-refresh-weekly-agenda-files)
+  (advice-add 'org-agenda-list :before #'my/org-refresh-weekly-agenda-files))
 
 (use-package! org-pomodoro
   :after org
