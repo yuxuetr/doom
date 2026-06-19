@@ -65,7 +65,6 @@
        lookup              ; navigate your code and its documentation
        (lsp +eglot)               ; M-x vscode
        magit             ; a git porcelain for Emacs
-       tree-sitter       ; syntax and parsing, sitting in a tree...
 
        :os
        (:if IS-MAC macos)  ; improve compatibility with macOS
@@ -79,7 +78,6 @@
         +lsp
         )
        (julia
-        +tree-sitter
         +lsp
         )
        (latex
@@ -88,19 +86,15 @@
         )
        (org
         +pretty
-        +gnuplot
-        +pandoc
         +pomodoro
        )
        (python
         +uv
-        +lsp
         )
        (racket
         +lsp
         )
        (rust
-        +tree-sitter
         +lsp
         )
 

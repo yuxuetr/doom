@@ -211,41 +211,14 @@
         org-pomodoro-long-break-frequency 4))
 
 ;;;; Languages & Tools
-
-(defun my/python-use-classic-mode! ()
-  "Prefer classic `python-mode' over `python-ts-mode'."
-  (dolist (alist-var '(major-mode-remap-alist
-                       major-mode-remap-defaults
-                       treesit-major-mode-remap-alist))
-    (when (boundp alist-var)
-      (set alist-var (assq-delete-all 'python-mode (symbol-value alist-var)))))
-  (setq auto-mode-alist
-        (cl-remove-if
-         (lambda (entry)
-           (and (consp entry)
-                (eq (cdr entry) 'python-ts-mode)))
-         auto-mode-alist))
-  (add-to-list 'auto-mode-alist '("\\.py\\'" . python-mode)))
-
-(after! treesit
-  ;; Doom installs grammars under its profile data dir, but making the path
-  ;; explicit keeps Emacs 30 able to find already-built grammars like Rust.
-  (add-to-list 'treesit-extra-load-path
-               (expand-file-name ".local/cache/tree-sitter" doom-emacs-dir))
-  ;; Level 4 is visually rich but can be noticeably heavier in large Rust files.
-  (setq treesit-font-lock-level 3))
-
-(use-package! treesit-auto
-  :custom
-  (treesit-auto-install 'prompt)
-  :config
-  (setq treesit-auto-langs (delete 'python treesit-auto-langs))
-  (dolist (grammar '((rust "https://github.com/tree-sitter/tree-sitter-rust")
-                     (julia "https://github.com/tree-sitter/tree-sitter-julia")))
-    (cl-pushnew grammar treesit-language-source-alist :test #'eq :key #'car))
-  (treesit-auto-add-to-auto-mode-alist)
-  (my/python-use-classic-mode!)
-  (global-treesit-auto-mode))
+;; tree-sitter is intentionally not used: this Emacs links against
+;; libtree-sitter >= 0.25 (homebrew 0.26), which is incompatible with Emacs
+;; 30.2's `treesit.c' query serializer -- every `#match'/`#equal' predicate
+;; fails to compile, breaking `*-ts-mode' font-lock for all grammars. Rather
+;; than carry per-language Lisp workarounds against an external tool whose
+;; version keeps drifting, every language uses its classic regex `font-lock'
+;; major mode (rustic-mode, python-mode, go-mode, julia-mode, ...). The theme
+;; colors the same faces, and LSP still provides all semantics.
 
 (defun my/rust-cargo-deny ()
   "Run cargo deny for the current project."
@@ -289,112 +262,10 @@
            :n "SPC m t a" #'rustic-cargo-test
            :n "SPC m t t" #'rustic-cargo-current-test)))
 
+;; `.rs' opens in `rustic-mode' (derived from `rust-mode'), so binding the cargo
+;; localleader keys on `rust-mode-map' covers rustic via keymap inheritance.
 (after! rust-mode
   (my/rust-cargo-localleader-bindings! rust-mode-map))
-
-(after! rust-ts-mode
-  (my/rust-cargo-localleader-bindings! rust-ts-mode-map)
-
-  ;; Emacs 30.2 expands some Rust font-lock predicates into queries that fail
-  ;; against the local Rust grammar/runtime. Keep Rust on `rust-ts-mode' by
-  ;; moving those text checks into Lisp-side capture functions.
-  (defun my-rust-ts-fontify-matching-text (node override start end face regexp)
-    "Fontify NODE with FACE when its text matches REGEXP."
-    (when (string-match-p regexp (treesit-node-text node t))
-      (treesit-fontify-with-override
-       (treesit-node-start node) (treesit-node-end node)
-       face override start end)))
-
-  (defun my-rust-ts-fontify-builtin-macro (node override start end &rest _)
-    "Fontify built-in Rust macro identifiers."
-    (my-rust-ts-fontify-matching-text
-     node override start end 'font-lock-builtin-face
-     (rx-to-string `(seq bol (or ,@rust-ts-mode--builtin-macros) eol))))
-
-  (defun my-rust-ts-fontify-option-result (node override start end &rest _)
-    "Fontify Rust Option and Result variant identifiers."
-    (my-rust-ts-fontify-matching-text
-     node override start end 'font-lock-type-face
-     (rx bos (or "Err" "Ok" "None" "Some") eos)))
-
-  (defun my-rust-ts-fontify-macro-keyword (node override start end &rest _)
-    "Fontify keyword-looking identifiers inside macro bodies."
-    (my-rust-ts-fontify-matching-text
-     node override start end 'font-lock-keyword-face
-     (rx bos (or "else" "in" "move") eos)))
-
-  (defun my-rust-ts-fontify-uppercase-type (node override start end &rest _)
-    "Fontify uppercase identifiers as Rust types."
-    (my-rust-ts-fontify-matching-text
-     node override start end 'font-lock-type-face
-     (rx bos upper)))
-
-  (defun my-rust-ts-fontify-primitive-scope (node override start end &rest _)
-    "Fontify Rust primitive identifiers in scoped paths."
-    (my-rust-ts-fontify-matching-text
-     node override start end 'font-lock-type-face
-     (rx bos
-         (or "u8" "u16" "u32" "u64" "u128" "usize"
-             "i8" "i16" "i32" "i64" "i128" "isize"
-             "char" "str")
-         eos)))
-
-  (defun my-rust-ts-fontify-uppercase-constant (node override start end &rest _)
-    "Fontify all-caps identifiers as Rust constants."
-    (my-rust-ts-fontify-matching-text
-     node override start end 'font-lock-constant-face
-     (rx bos upper (* (or upper digit "_")) eos)))
-
-  (setq rust-ts-mode--font-lock-settings
-        (append
-         (cl-remove-if
-          (lambda (setting)
-            (memq (nth 2 setting) '(builtin keyword type constant)))
-          rust-ts-mode--font-lock-settings)
-         (treesit-font-lock-rules
-          :language 'rust
-          :feature 'builtin
-          '((macro_invocation
-             macro: (identifier) @my-rust-ts-fontify-builtin-macro)
-            (identifier) @my-rust-ts-fontify-option-result)
-
-          :language 'rust
-          :feature 'keyword
-          `([,@rust-ts-mode--keywords] @font-lock-keyword-face
-            (identifier) @my-rust-ts-fontify-macro-keyword)
-
-          :language 'rust
-          :feature 'type
-          '((scoped_use_list path: (identifier) @font-lock-constant-face)
-            (scoped_use_list
-             path: (scoped_identifier
-                    name: (identifier) @font-lock-constant-face))
-            (use_as_clause alias: (identifier) @my-rust-ts-fontify-uppercase-type)
-            (use_as_clause path: (identifier) @my-rust-ts-fontify-uppercase-type)
-            (use_list (identifier) @my-rust-ts-fontify-uppercase-type)
-            (use_wildcard
-             [(identifier) @rust-ts-mode--fontify-scope
-              (scoped_identifier
-               name: (identifier) @rust-ts-mode--fontify-scope)])
-            (enum_variant name: (identifier) @font-lock-type-face)
-            (match_arm
-             pattern: (match_pattern (_ type: (identifier) @font-lock-type-face)))
-            (match_arm
-             pattern: (match_pattern
-                       (_ type: (scoped_identifier
-                                 path: (identifier) @font-lock-type-face))))
-            (mod_item name: (identifier) @font-lock-constant-face)
-            [(fragment_specifier) (primitive_type) (type_identifier)] @font-lock-type-face
-            (scoped_identifier name: (identifier) @rust-ts-mode--fontify-tail)
-            (scoped_identifier path: (identifier) @my-rust-ts-fontify-primitive-scope)
-            (scoped_identifier path: (identifier) @rust-ts-mode--fontify-scope)
-            (scoped_type_identifier
-             path: (identifier) @rust-ts-mode--fontify-scope))
-
-          :language 'rust
-          :feature 'constant
-          '((boolean_literal) @font-lock-constant-face
-            (identifier) @my-rust-ts-fontify-uppercase-constant)))))
 
 ;;;; Racket
 (add-hook! '(racket-mode-hook racket-hash-lang-mode-hook racket-repl-mode-hook)
@@ -456,9 +327,11 @@
 (after! indent-bars
   (add-hook! '+indent-guides-inhibit-functions
     (defun my/disable-indent-guides-in-rust-p ()
-      (derived-mode-p 'rust-mode 'rust-ts-mode 'rustic-mode))))
+      (derived-mode-p 'rust-mode 'rustic-mode))))
 
-(add-hook! '(rust-mode-hook rust-ts-mode-hook rustic-mode-hook)
+;; `rustic-mode' derives from `rust-mode', so `rust-mode-hook' fires for it once
+;; (via the parent-hook chain); listing `rustic-mode-hook' too would double-run.
+(add-hook! 'rust-mode-hook
   (defun my/rust-performance-defaults-h ()
     "Prefer cheaper redisplay defaults in Rust buffers."
     (setq-local display-line-numbers t))
@@ -471,7 +344,7 @@
        (when (buffer-live-p buffer)
          (with-current-buffer buffer
            (when (and (require 'eglot nil t)
-                      (derived-mode-p 'rust-mode 'rust-ts-mode 'rustic-mode)
+                      (derived-mode-p 'rust-mode 'rustic-mode)
                       (not (eglot-current-server)))
              (eglot-ensure)))))
      (current-buffer))))
@@ -613,8 +486,7 @@
                 python-indent-offset 2
                 python-indent-guess-indent-offset nil
                 python-indent-guess-indent-offset-verbose nil
-                apheleia-inhibit t
-                treesit-font-lock-level 3)))
+                apheleia-inhibit t)))
 
 (add-hook! '(python-mode-local-vars-hook python-ts-mode-local-vars-hook)
            #'my/python-activate-uv-venv-h)
@@ -631,10 +503,6 @@
       (my/python-quit-output-window))))
 
 (after! python
-  ;; Emacs 30.2's `python-ts-mode' font-lock queries can be incompatible with
-  ;; the locally installed grammar, which breaks redisplay. Prefer classic
-  ;; `python-mode' until the grammar/runtime pair is upgraded together.
-  (my/python-use-classic-mode!)
   ;; Python is intentionally kept uv-only; no automatic LSP startup.
   (remove-hook 'python-mode-local-vars-hook #'lsp!)
   (remove-hook 'python-ts-mode-local-vars-hook #'lsp!)
@@ -702,12 +570,8 @@
 ;;; Global Formatting Configuration
 (after! apheleia
   ;; Force rustfmt to use the global config
-  (set-formatter! 'rustfmt '("rustfmt" "--config-path" "~/.rustfmt.toml" "--emit" "stdout") :modes '(rust-mode rustic-mode rust-ts-mode))
+  (set-formatter! 'rustfmt '("rustfmt" "--config-path" "~/.rustfmt.toml" "--emit" "stdout") :modes '(rust-mode rustic-mode))
   ;; Python uses `my/python-format-buffer' so 2-space indentation is preserved.
   (setq apheleia-mode-alist
         (assq-delete-all 'python-ts-mode
                          (assq-delete-all 'python-mode apheleia-mode-alist))))
-
-;; Force 2-space indentation globally in Emacs
-(setq-default tab-width 2
-              indent-tabs-mode nil)

@@ -49,9 +49,6 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
                                         ;(unpin! t)
 
-(package! treesit-auto
-  :recipe (:host github :repo "renzmann/treesit-auto" :files ("*.el" "dist")))
-
 (package! pip-requirements :disable t)
 (package! pipenv :disable t)
 (package! pyvenv :disable t)

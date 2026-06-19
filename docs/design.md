@@ -15,24 +15,20 @@ future upstream module additions is not a design goal.
 - Keep `doom-localleader-key` configured as `,`.
 - Keep Evil as the primary editing model.
 - Keep the default Doom binding/smartparens layer.
-- Keep Org mode.
+- Keep Org mode (`+pretty +pomodoro`).
 - Keep completion modules:
-  - `company`
-  - `corfu`
-  - `vertico`
+  - `company` (`+childframe`)
+  - `vertico` (`+icons`)
 - Keep UI modules:
   - `doom`
   - `hl-todo`
   - `indent-guides`
-  - `ligatures`
   - `modeline`
   - `ophints`
   - `popup`
   - `unicode`
   - `vi-tilde-fringe`
   - `workspaces`
-- Keep checker modules:
-  - `syntax`
 - Keep editor modules:
   - `evil`
   - `fold`
@@ -40,21 +36,22 @@ future upstream module additions is not a design goal.
   - `multiple-cursors`
 - Keep tool modules:
   - `editorconfig`
-  - `eval`
   - `lookup`
-  - `lsp`
+  - `lsp` (`+eglot`)
   - `magit`
-  - `tree-sitter`
+- Keep no checker modules. In-editor diagnostics are intentionally disabled:
+  `:checkers syntax` is off and Eglot stays out of Flymake. Errors are surfaced
+  by running `cargo check`/`clippy` and other build commands manually.
 - Keep no input modules.
 - Keep no app modules.
-- Keep language support for:
-  - C/C++ (`cc`)
-  - Go (`go`)
-  - Julia (`julia`)
+- Keep language support, all using their classic (non-tree-sitter) major modes:
+  - C/C++ (`cc`) -> `c-mode` / `c++-mode`
+  - Go (`go`) -> `go-mode`
+  - Julia (`julia`) -> `julia-mode`
   - LaTeX (`latex`)
-  - Python (`python`)
-  - Racket (`racket`)
-  - Rust (`rust`)
+  - Python (`python`) -> `python-mode`
+  - Racket (`racket`) -> `racket-mode`
+  - Rust (`rust`) -> `rustic-mode`
 
 ## Removed Behavior
 
@@ -80,6 +77,7 @@ future upstream module additions is not a design goal.
   - `deft`
   - `doom-quit`
   - `emoji`
+  - `ligatures`
   - `minimap`
   - `nav-flash`
   - `neotree`
@@ -103,6 +101,7 @@ future upstream module additions is not a design goal.
 - Remove unused checker modules:
   - `grammar`
   - `spell`
+  - `syntax` (no in-editor diagnostics; see "Keep no checker modules" above)
 - Remove unused editor modules:
   - `file-templates`
   - `god`
@@ -117,9 +116,20 @@ future upstream module additions is not a design goal.
   - `debugger`
   - `direnv`
   - `docker`
+  - `eval`
   - `llm`
   - `make`
   - `tmux`
+  - `tree-sitter`
+- Remove tree-sitter entirely (the `:tools tree-sitter` module and every
+  language's `+tree-sitter` flag). This Emacs links against
+  `libtree-sitter >= 0.25` (homebrew 0.26), which is incompatible with Emacs
+  30.2's `treesit.c`: every `#match`/`#equal` query predicate fails to compile,
+  breaking `*-ts-mode` font-lock for all grammars. Tree-sitter is an external
+  tool whose version keeps drifting and re-breaking this pairing, so instead of
+  carrying per-language Lisp workarounds, every language uses its classic regex
+  `font-lock` major mode. The color theme styles the same faces, and LSP still
+  provides all semantics (completion, navigation, inlay hints).
 - Remove Doom Python integration for package/environment managers other than
   `uv`.
 - Remove Python test framework helpers that are not part of the requested
@@ -132,7 +142,11 @@ The Python module keeps:
 - Built-in `python-mode` / `python-ts-mode` integration.
 - REPL helpers.
 - `+uv` support through `uv-mode`.
-- LSP integration through Doom's existing `:tools lsp +eglot` path.
+
+The Python module is intentionally `+uv` only (no `+lsp`). Doom's LSP startup
+hooks are removed in `config.el` and Python is dropped from
+`eglot-server-programs`, so no language server starts for Python buffers.
+Editing relies on built-in completion plus `uv run`.
 
 The Python module removes:
 
