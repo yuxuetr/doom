@@ -49,9 +49,11 @@
 ;;;; Editor & Indentation
 (setq-default tab-width 2
               standard-indent 2
-              indent-tabs-mode nil
-              electric-indent-mode t
-              auto-fill-function 'do-auto-fill)
+              indent-tabs-mode nil)
+
+;; Auto-fill belongs in prose, not code: enabling it globally hard-wraps source
+;; lines while typing and adds a per-self-insert cost everywhere.
+(add-hook! '(org-mode-hook text-mode-hook) #'turn-on-auto-fill)
 
 (setq default-directory "~/")
 
@@ -163,7 +165,11 @@
   (find-file (my/org-weekly-task-file))
   (setq-local default-directory (expand-file-name "~/")))
 
-(add-hook 'emacs-startup-hook #'my/open-weekly-tasks)
+;; Open the weekly task file shortly after the frame is up, rather than blocking
+;; startup on loading Org (and org-modern/org-appear/babel) before first paint.
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (run-with-idle-timer 0.3 nil #'my/open-weekly-tasks)))
 
 (after! org
   (setq org-agenda-files (list (my/org-weekly-task-file))
@@ -649,7 +655,9 @@
     (evil-define-key* 'normal compilation-mode-map "q" #'quit-window)))
 
 ;; Eglot + Inlay Hints
-(setq gc-cons-threshold 100000000) ;; 100MB GC threshold
+;; NOTE: GC is left to Doom's `gcmh', which raises the threshold while idle and
+;; lowers it during interaction. A permanent 100MB override defeats that and can
+;; cause occasional long pauses, so it is intentionally not set here.
 
 (use-package! eglot
   :config
@@ -660,10 +668,15 @@
         eglot-max-file-watches 1000
         eglot-watch-files-outside-project-root nil)
 
+  ;; rust-analyzer is extremely chatty; logging every JSON-RPC message to the
+  ;; events buffer grows memory and conses continuously over a long session.
+  ;; Emacs 30 uses the plist `eglot-events-buffer-config'; size 0 disables it.
+  (setq eglot-events-buffer-config '(:size 0 :format full))
+
   (add-hook 'eglot-managed-mode-hook
             (defun my/enable-rust-inlay-hints-h ()
               "Enable rust-analyzer inlay hints in Rust buffers."
-              (when (derived-mode-p 'rust-mode 'rust-ts-mode 'rustic-mode)
+              (when (derived-mode-p 'rust-mode 'rustic-mode)
                 (eglot-inlay-hints-mode 1))))
 
   ;; Keep Python uv-only; do not let Eglot auto-resolve a Python language server.
