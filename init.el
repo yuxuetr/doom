@@ -31,7 +31,7 @@
        ophints           ; highlight the region an operation acts on
        (popup +defaults)   ; tame sudden yet inevitable temporary windows
        unicode           ; extended unicode support for various languages
-       ;;vc-gutter        ; vcs diff in the fringe
+       (vc-gutter +pretty) ; vcs diff in the fringe
        vi-tilde-fringe   ; fringe tildes to mark beyond EOB
        ;;window-select     ; visually switch windows
        workspaces        ; tab emulation, persistence & separate workspaces
@@ -62,6 +62,7 @@
 
        :tools
        editorconfig      ; let someone else argue about tabs vs spaces
+       (eval +overlay)   ; run code, run (also, repl) ; gives gr/gR send-to-eval
        lookup              ; navigate your code and its documentation
        (lsp +eglot)               ; M-x vscode
        magit             ; a git porcelain for Emacs
