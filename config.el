@@ -4,6 +4,16 @@
 (setq user-full-name "yuxuetr"
       user-mail-address "54.yeying@gmail.com")
 
+;;;; Compatibility shims
+;; The :editor snippets module is disabled AND its source directory was pruned,
+;; so Doom cannot auto-generate the usual no-op stub for `set-yas-minor-mode!'.
+;; Doom's magit module still calls it when setting up git-commit buffers, which
+;; raised `(void-function set-yas-minor-mode!)'. Define a harmless no-op.
+(unless (fboundp 'set-yas-minor-mode!)
+  (defun set-yas-minor-mode! (&rest _)
+    "No-op stub: the :editor snippets module is disabled."
+    nil))
+
 ;;;; UI & Fonts
 (setq doom-theme 'doom-monokai-pro)
 (setq display-line-numbers-type t)
