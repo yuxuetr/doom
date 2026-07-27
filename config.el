@@ -111,6 +111,10 @@
 ;;;; Org Mode
 (setq org-directory "~/org/")
 
+(defconst my/org-action-plan-file
+  (expand-file-name "yeying_action_plan.org" org-directory)
+  "Primary Org action plan opened at startup and used for agenda.")
+
 (defun my/org-week-start-time (&optional time)
   "Return the Monday start time for TIME's ISO week."
   (let* ((time (or time (current-time)))
@@ -160,28 +164,40 @@
   "Capture into this week's task list."
   (my/org-goto-heading "This Week"))
 
-(defun my/open-weekly-tasks ()
-  "Open this week's task file."
-  (find-file (my/org-weekly-task-file))
+(defun my/open-action-plan ()
+  "Open the primary action plan file."
+  (find-file my/org-action-plan-file)
   (setq-local default-directory (expand-file-name "~/")))
 
-;; Open the weekly task file shortly after the frame is up, rather than blocking
+;; Open the action plan shortly after the frame is up, rather than blocking
 ;; startup on loading Org (and org-modern/org-appear/babel) before first paint.
 (add-hook 'emacs-startup-hook
           (lambda ()
-            (run-with-idle-timer 0.3 nil #'my/open-weekly-tasks)))
+            (run-with-idle-timer 0.3 nil #'my/open-action-plan)))
 
 (after! org
-  (setq org-agenda-files (list (my/org-weekly-task-file))
+  (setq org-agenda-files (list my/org-action-plan-file)
         org-log-done 'time
         org-log-into-drawer t
         org-clock-persist 'history
         org-clock-report-include-clocking-task t
         org-enforce-todo-checkbox-dependencies t
         org-todo-keywords
-        '((sequence "TODO(t)" "NEXT(n)" "WAIT(w@/!)" "|" "DONE(d!)" "CANCELLED(c@)"))
+        '((sequence "TODO(t)" "NEXT(n)" "IN-PROGRESS(i)" "WAITING(w@/!)" "|" "DONE(d!)" "CANCELLED(c@)"))
         org-refile-targets
         '((org-agenda-files :maxlevel . 3))
+        org-agenda-custom-commands
+        '(("y" "曳影行动控制台"
+           ((agenda "" ((org-agenda-span 'day)
+                        (org-agenda-overriding-header "今日战场 SOP")))
+            (tags-todo "PRIORITY=\"A\""
+                       ((org-agenda-overriding-header "核心战略攻坚")
+                        (org-agenda-skip-function
+                         '(org-agenda-skip-entry-if 'scheduled))))
+            (todo "NEXT"
+                  ((org-agenda-overriding-header "当前推进项目")))
+            (tags "RL+QUANT/TODO"
+                  ((org-agenda-overriding-header "AI 与量化交叉阵地"))))))
         org-capture-templates
         '(("t" "Task inbox" entry
            (function my/org-capture-weekly-inbox)
@@ -192,15 +208,14 @@
 
   (org-clock-persistence-insinuate)
 
-  ;; `org-agenda-files' above is computed once at load. After midnight on the
-  ;; ISO week boundary it would still point at last week's file, hiding the new
-  ;; week's tasks. Recompute it just before any agenda command runs.
-  (defun my/org-refresh-weekly-agenda-files (&rest _)
-    "Point `org-agenda-files' at the current ISO week's task file."
-    (setq org-agenda-files (list (my/org-weekly-task-file))))
-  (advice-add 'org-agenda :before #'my/org-refresh-weekly-agenda-files)
-  (advice-add 'org-todo-list :before #'my/org-refresh-weekly-agenda-files)
-  (advice-add 'org-agenda-list :before #'my/org-refresh-weekly-agenda-files))
+  ;; Keep agenda focused on the fixed action plan. The plan's repeating Org
+  ;; timestamps handle daily/weekly continuity without rotating config files.
+  (defun my/org-refresh-action-plan-agenda-files (&rest _)
+    "Point `org-agenda-files' at the primary action plan file."
+    (setq org-agenda-files (list my/org-action-plan-file)))
+  (advice-add 'org-agenda :before #'my/org-refresh-action-plan-agenda-files)
+  (advice-add 'org-todo-list :before #'my/org-refresh-action-plan-agenda-files)
+  (advice-add 'org-agenda-list :before #'my/org-refresh-action-plan-agenda-files))
 
 (use-package! org-pomodoro
   :after org
