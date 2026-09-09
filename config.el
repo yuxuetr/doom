@@ -246,9 +246,9 @@
      (map! :map ,keymap
            :localleader
            :desc "cargo add"   "a" #'rustic-cargo-add
-           :desc "cargo rm"    "d" #'rustic-cargo-rm
+           :desc "cargo rm"    "r" #'rustic-cargo-rm
            :desc "cargo check" "c" #'rustic-cargo-check
-           :desc "cargo deny"  "y" #'my/rust-cargo-deny
+           :desc "cargo deny"  "d" #'my/rust-cargo-deny
            (:prefix ("b" . "build")
             :desc "cargo audit"      "a" #'+rust/cargo-audit
             :desc "cargo build"      "b" #'rustic-cargo-build
@@ -267,9 +267,9 @@
             :desc "current test"     "t" #'rustic-cargo-current-test))
      (map! :map ,keymap
            :n "SPC m a" #'rustic-cargo-add
-           :n "SPC m d" #'rustic-cargo-rm
+           :n "SPC m r" #'rustic-cargo-rm
            :n "SPC m c" #'rustic-cargo-check
-           :n "SPC m y" #'my/rust-cargo-deny
+           :n "SPC m d" #'my/rust-cargo-deny
            :n "SPC m b a" #'+rust/cargo-audit
            :n "SPC m b b" #'rustic-cargo-build
            :n "SPC m b B" #'rustic-cargo-bench
