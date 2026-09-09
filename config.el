@@ -592,3 +592,22 @@
   (setq apheleia-mode-alist
         (assq-delete-all 'python-ts-mode
                          (assq-delete-all 'python-mode apheleia-mode-alist))))
+
+;;;; 全局创建项目快捷键 (Global Project Creation)
+(defun my/python-uv-init-project (dir)
+  "Create a new uv Python project in DIR."
+  (interactive "DNew uv project directory: ")
+  (let ((default-directory (file-name-as-directory (expand-file-name dir))))
+    (unless (file-directory-p default-directory)
+      (make-directory default-directory t))
+    ;; 运行 uv init 并静默输出
+    (shell-command "uv init")
+    (message "Created uv project in %s" default-directory)
+    ;; 自动打开创建的 pyproject.toml 方便直接开始写
+    (find-file (expand-file-name "pyproject.toml" default-directory))))
+
+(map! :leader
+      (:prefix-map ("p" . "project")
+       (:prefix ("n" . "new project")
+        :desc "Cargo (Rust)"    "r" #'rustic-cargo-new
+        :desc "uv (Python)"     "p" #'my/python-uv-init-project)))
