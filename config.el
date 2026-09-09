@@ -595,7 +595,7 @@
 ;;; Global Formatting Configuration
 (after! apheleia
   ;; Force rustfmt to use the global config
-  (set-formatter! 'rustfmt '("rustfmt" "--config-path" "~/.rustfmt.toml" "--emit" "stdout") :modes '(rust-mode rustic-mode))
+  (set-formatter! 'rustfmt `("rustfmt" "--config-path" ,(expand-file-name "~/.rustfmt.toml") "--emit" "stdout") :modes '(rust-mode rustic-mode))
   ;; Python uses `my/python-format-buffer' so 2-space indentation is preserved.
   (setq apheleia-mode-alist
         (assq-delete-all 'python-ts-mode
