@@ -245,6 +245,8 @@
   `(progn
      (map! :map ,keymap
            :localleader
+           :desc "cargo add" "a" #'rustic-cargo-add
+           :desc "cargo rm"  "d" #'rustic-cargo-rm
            (:prefix ("b" . "build")
             :desc "cargo audit"      "a" #'+rust/cargo-audit
             :desc "cargo build"      "b" #'rustic-cargo-build
@@ -262,6 +264,8 @@
             :desc "all"              "a" #'rustic-cargo-test
             :desc "current test"     "t" #'rustic-cargo-current-test))
      (map! :map ,keymap
+           :n "SPC m a" #'rustic-cargo-add
+           :n "SPC m d" #'rustic-cargo-rm
            :n "SPC m b a" #'+rust/cargo-audit
            :n "SPC m b b" #'rustic-cargo-build
            :n "SPC m b B" #'rustic-cargo-bench
