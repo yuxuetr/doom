@@ -595,18 +595,11 @@
 
 ;;
 ;;; Global Formatting Configuration
-(defun my/rustfmt-apheleia-command (&rest _)
-  "Return rustfmt command list dynamically based on project config."
-  (let ((config-file (or (let ((f (locate-dominating-file default-directory "rustfmt.toml")))
-                           (and f (expand-file-name "rustfmt.toml" f)))
-                         (let ((f (locate-dominating-file default-directory ".rustfmt.toml")))
-                           (and f (expand-file-name ".rustfmt.toml" f)))
-                         (expand-file-name "~/.rustfmt.toml"))))
-    (list "rustfmt" "--quiet" "--config-path" config-file "--emit" "stdout")))
-
 (after! apheleia
-  ;; Use local config if available, fallback to global config
-  (set-formatter! 'rustfmt 'my/rustfmt-apheleia-command :modes '(rust-mode rustic-mode))
+  ;; Passing `filepath` forces apheleia to create a temp file in the project dir.
+  ;; This allows `rustfmt` to natively search upwards for `rustfmt.toml` in the
+  ;; project, and gracefully fallback to `~/.rustfmt.toml` if none is found.
+  (set-formatter! 'rustfmt '("rustfmt" "--quiet" "--emit" "stdout" filepath) :modes '(rust-mode rustic-mode))
   ;; Python uses `my/python-format-buffer' so 2-space indentation is preserved.
   (setq apheleia-mode-alist
         (assq-delete-all 'python-ts-mode
