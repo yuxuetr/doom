@@ -249,6 +249,7 @@
            :desc "cargo rm"    "r" #'rustic-cargo-rm
            :desc "cargo check" "c" #'rustic-cargo-check
            :desc "cargo deny"  "d" #'my/rust-cargo-deny
+           :desc "format file" "f" #'+format/buffer
            (:prefix ("b" . "build")
             :desc "cargo audit"      "a" #'+rust/cargo-audit
             :desc "cargo build"      "b" #'rustic-cargo-build
@@ -270,6 +271,7 @@
            :n "SPC m r" #'rustic-cargo-rm
            :n "SPC m c" #'rustic-cargo-check
            :n "SPC m d" #'my/rust-cargo-deny
+           :n "SPC m f" #'+format/buffer
            :n "SPC m b a" #'+rust/cargo-audit
            :n "SPC m b b" #'rustic-cargo-build
            :n "SPC m b B" #'rustic-cargo-bench
@@ -593,9 +595,16 @@
 
 ;;
 ;;; Global Formatting Configuration
+(defun my/rustfmt-apheleia-command ()
+  "Return rustfmt command list dynamically based on project config."
+  (if (or (locate-dominating-file default-directory "rustfmt.toml")
+          (locate-dominating-file default-directory ".rustfmt.toml"))
+      '("rustfmt" "--quiet" "--emit" "stdout")
+    (list "rustfmt" "--quiet" "--config-path" (expand-file-name "~/.rustfmt.toml") "--emit" "stdout")))
+
 (after! apheleia
-  ;; Force rustfmt to use the global config
-  (set-formatter! 'rustfmt `("rustfmt" "--config-path" ,(expand-file-name "~/.rustfmt.toml") "--emit" "stdout") :modes '(rust-mode rustic-mode))
+  ;; Use local config if available, fallback to global config
+  (set-formatter! 'rustfmt 'my/rustfmt-apheleia-command :modes '(rust-mode rustic-mode))
   ;; Python uses `my/python-format-buffer' so 2-space indentation is preserved.
   (setq apheleia-mode-alist
         (assq-delete-all 'python-ts-mode
