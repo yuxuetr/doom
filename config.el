@@ -597,10 +597,12 @@
 ;;; Global Formatting Configuration
 (defun my/rustfmt-apheleia-command ()
   "Return rustfmt command list dynamically based on project config."
-  (if (or (locate-dominating-file default-directory "rustfmt.toml")
-          (locate-dominating-file default-directory ".rustfmt.toml"))
-      '("rustfmt" "--quiet" "--emit" "stdout")
-    (list "rustfmt" "--quiet" "--config-path" (expand-file-name "~/.rustfmt.toml") "--emit" "stdout")))
+  (let ((config-file (or (let ((f (locate-dominating-file default-directory "rustfmt.toml")))
+                           (and f (expand-file-name "rustfmt.toml" f)))
+                         (let ((f (locate-dominating-file default-directory ".rustfmt.toml")))
+                           (and f (expand-file-name ".rustfmt.toml" f)))
+                         (expand-file-name "~/.rustfmt.toml"))))
+    (list "rustfmt" "--quiet" "--config-path" config-file "--emit" "stdout")))
 
 (after! apheleia
   ;; Use local config if available, fallback to global config
