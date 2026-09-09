@@ -527,6 +527,26 @@
     (when (my/python-output-window)
       (my/python-quit-output-window))))
 
+(defun my/python-uv-add (package)
+  "Add a package to the current uv project."
+  (interactive "suv add: ")
+  (let* ((file (file-truename (or buffer-file-name default-directory)))
+         (root (or (my/python-uv-project-root (file-name-directory file))
+                   (locate-dominating-file file ".git")
+                   (file-name-directory file)))
+         (default-directory (file-truename root)))
+    (compilation-start (format "uv add %s" package) 'compilation-mode)))
+
+(defun my/python-uv-remove (package)
+  "Remove a package from the current uv project."
+  (interactive "suv remove: ")
+  (let* ((file (file-truename (or buffer-file-name default-directory)))
+         (root (or (my/python-uv-project-root (file-name-directory file))
+                   (locate-dominating-file file ".git")
+                   (file-name-directory file)))
+         (default-directory (file-truename root)))
+    (compilation-start (format "uv remove %s" package) 'compilation-mode)))
+
 (after! python
   ;; Python is intentionally kept uv-only; no automatic LSP startup.
   (remove-hook 'python-mode-local-vars-hook #'lsp!)
@@ -534,9 +554,10 @@
   (map! :map python-base-mode-map
         :localleader
         "e" nil
+        :desc "uv add"    "a" #'my/python-uv-add
+        :desc "uv remove" "r" #'my/python-uv-remove
         :desc "format buffer" "f" #'my/python-format-buffer
-        (:prefix ("r" . "run")
-         :desc "uv run file" "r" #'my/python-uv-run-file))
+        :desc "uv run file"   "R" #'my/python-uv-run-file)
   (after! evil
     (evil-define-key* '(normal insert emacs motion)
       python-base-mode-map [escape] #'my/python-escape-or-quit-output-window)))
