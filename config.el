@@ -595,7 +595,7 @@
 
 ;;
 ;;; Global Formatting Configuration
-(defun my/rustfmt-apheleia-command ()
+(defun my/rustfmt-apheleia-command (&rest _)
   "Return rustfmt command list dynamically based on project config."
   (let ((config-file (or (let ((f (locate-dominating-file default-directory "rustfmt.toml")))
                            (and f (expand-file-name "rustfmt.toml" f)))
